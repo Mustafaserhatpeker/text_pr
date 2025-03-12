@@ -1,50 +1,31 @@
 import spacy
-import pdfplumber
-from reportlab.lib.pagesizes import letter
-from reportlab.pdfgen import canvas
 
-# spaCy'nin İngilizce modelini yükle
+# İngilizce modelini yükle
 nlp = spacy.load("en_core_web_sm")
-pdf_path = "document.pdf"
 
-# PDF'den metin çıkartma fonksiyonu
-def extract_text_from_pdf(pdf_path):
-    text = ""
-    with pdfplumber.open(pdf_path) as pdf:
-        for page in pdf.pages:
-            text += page.extract_text()
-    return text
+# Uzun bir metin örneği
+text = """
+Google LLC is an American multinational technology company specializing in Internet-related services and products.
+It was founded by Larry Page and Sergey Brin in September 1998 while they were Ph.D. students at Stanford University in California.
+The company's headquarters are located in Mountain View, California, also known as the "Googleplex".
+Alphabet Inc., Google's parent company, was created in 2015 to restructure Google by moving some of its subsidiaries into a new holding company.
+One of Google's most famous products is its search engine, which is used by millions of people worldwide.
+Google also owns YouTube, Android, and other services like Google Drive and Gmail, which are essential parts of people's daily digital experience.
+Elon Musk, the CEO of Tesla, has also expressed interest in the development of artificial intelligence technologies to compete with companies like Google.
+The United States and the European Union have been involved in regulating tech giants like Google, questioning their dominance and data privacy practices.
+"""
 
-# PDF'den metni çıkart
-text = extract_text_from_pdf(pdf_path)
-
-# Metni spaCy ile işleyin
+# Metni işleyin
 doc = nlp(text)
 
-# Anonimleştirilmiş metin
+# Anonimleştirilecek varlıkları tespit et
 anonymized_text = text
 for ent in doc.ents:
     if ent.label_ in ['PERSON', 'ORG', 'GPE']:
         anonymized_text = anonymized_text.replace(ent.text, "[REDACTED]")
 
-# Yeni bir PDF dosyasına anonimleştirilmiş metni yazmak için reportlab kullanacağız
-def save_text_as_pdf(text, output_pdf_path):
-    c = canvas.Canvas(output_pdf_path, pagesize=letter)
-    width, height = letter
-    y_position = height - 40  # Başlangıç y konumu (üstten)
+# Anonimleştirilmiş metni dosyaya yazma
+with open("anonimized_article.txt", "w") as file:
+    file.write(anonymized_text)
 
-    for line in text.split('\n'):
-        c.drawString(40, y_position, line)
-        y_position -= 12  # Satır aralığı
-
-        if y_position < 40:  # Sayfa sonuna gelindiğinde yeni sayfa ekle
-            c.showPage()
-            y_position = height - 40
-
-    c.save()
-
-# Yeni anonimleştirilmiş PDF dosyasını kaydet
-output_pdf_path = "anonymized_document.pdf"
-save_text_as_pdf(anonymized_text, output_pdf_path)
-
-print(f"Dosya kaydedildi: {output_pdf_path}")
+print("Anonimleştirilmiş metin 'anonimized_article.txt' dosyasına kaydedildi.")
