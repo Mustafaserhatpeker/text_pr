@@ -1,11 +1,23 @@
 import spacy
-
+from spacy.pipeline import EntityRuler
 # İngilizce modelini yükle
 nlp = spacy.load("en_core_web_md")
+ruler = nlp.add_pipe("entity_ruler", before="ner")
 
+# Özel varlık desenlerini tanımla
+patterns = [
+    {"label": "ORG", "pattern": "Google"},
+    {"label": "PERSON", "pattern": "Elon Musk"},
+    {"label": "ORG", "pattern": "Tesla"},
+    {"label": "ORG", "pattern": "Kocaeli Üniversitesi"},
+    # Burada daha fazla özel desen ekleyebilirsiniz
+]
+
+# Desenleri EntityRuler'a ekle
+ruler.add_patterns(patterns)
 # Uzun bir metin örneği
 text = """
-The Evolution of Machine Learning: A Journey Through Time and Innovation
+The Evolution of Machine Learning: A Journey Through Time and Innovation Kocaeli Üniversitesi 
 
 Machine Learning (ML) has become one of the most transformative fields in modern technology, revolutionizing industries, scientific research, and daily life. The field's evolution is marked by the contributions of numerous researchers, institutions, and companies that have pushed the boundaries of what machines can learn and do. This article explores the journey of machine learning, highlighting the key figures and organizations that have played pivotal roles in its development.
 
