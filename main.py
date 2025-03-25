@@ -7,7 +7,9 @@ from spacy.pipeline import EntityRuler
 nlp = spacy.load("en_core_web_md")
 ruler = nlp.add_pipe("entity_ruler", before="ner")
 
-
+# Aşağıdaki kısıma isimleri şirket adlarını falan yazacaksın.
+# burada örnek olarak Google, Elon Musk, Tesla, Kocaeli Üniversitesi yazdım, sen istediğin kadar isim
+# ekleyebilirsin.
 patterns = [
     {"label": "ORG", "pattern": "Google"},
     {"label": "PERSON", "pattern": "Elon Musk"},
@@ -19,7 +21,7 @@ patterns = [
 ruler.add_patterns(patterns)
 
 
-file_path = sys.argv[1]  
+file_path = sys.argv[1]
 
 with open(file_path, 'r', encoding='utf-8') as file:
     text = file.read()
@@ -30,7 +32,7 @@ doc = nlp(text)
 
 anonymized_text = text
 for ent in doc.ents:
-    if ent.label_ in ['PERSON', 'ORG', 'GPE']:
+    if ent.label_ in ['PERSON', 'ORG']:
         anonymized_text = anonymized_text.replace(ent.text, "[REDACTED]")
 
 
