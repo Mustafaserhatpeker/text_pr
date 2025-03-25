@@ -62,3 +62,5 @@ with open(new_file_path, "w", encoding='utf-8') as file:
 
 # Kullanıcıya işlemin tamamlandığını bildiriyoruz.
 print(f"İşlem tamamlandı! Yeni dosya kaydedildi: {new_file_path}")
+# Umarım işinize yarar efenim.
+# İyi çalışmalar.
