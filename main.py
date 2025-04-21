@@ -1,55 +1,63 @@
+
 import sys
-import os
-import spacy
-import fitz  # PyMuPDF
+import os  # Dosya işlemleri için gerekli modül.
+import spacy  # Metin işleme için spaCy kütüphanesi.
+# Kendi özel isim tanımlamalarımız için kullanıyoruz.
 from spacy.pipeline import EntityRuler
 
+# Önceden eğitilmiş İngilizce dil modeli yükleniyor.
 nlp = spacy.load("en_core_web_md")
+
+# "entity_ruler" adlı bileşeni, "ner" (adlandırılmış varlık tanıma) bileşeninden önce ekliyoruz.
+# Bu sayede kendi eklediğimiz kurallar, modelin öğrendiği bilgilerden önce uygulanır.
 ruler = nlp.add_pipe("entity_ruler", before="ner")
 
+# Özel olarak tespit edilmesini istediğimiz kişi ve organizasyon isimlerini tanımlıyoruz.
 patterns = [
+    # "Google" kelimesi ORGANIZATION (şirket) olarak tanımlanıyor.
     {"label": "ORG", "pattern": "Google"},
+    # "Elon Musk" bir kişi ismi olarak tanımlanıyor.
     {"label": "PERSON", "pattern": "Elon Musk"},
-    {"label": "ORG", "pattern": "Tesla"},
+    {"label": "ORG", "pattern": "Tesla"},  # "Tesla" şirket olarak algılanıyor.
+    # "Kocaeli Üniversitesi" de bir organizasyon olarak işaretleniyor.
     {"label": "ORG", "pattern": "Kocaeli Üniversitesi"},
 ]
+
+# Belirlenen özel isimler entity_ruler'a ekleniyor.
 ruler.add_patterns(patterns)
 
+# Komut satırından dosya yolunu alıyoruz.
+# Kullanıcı, kodu çalıştırırken bir dosya yolu vermeli.
 file_path = sys.argv[1]
-file_ext = os.path.splitext(file_path)[1].lower()
 
-if file_ext != ".pdf":
-    print("Bu sürüm sadece PDF dosyaları için çalışır.")
-    sys.exit(1)
+# Belirtilen dosyayı okuyup içeriğini değişkene alıyoruz. Bu dosya yolu benim yazdığım API den geliyor, kafan karışmasın.
+with open(file_path, 'r', encoding='utf-8') as file:
+    text = file.read()
 
-doc = fitz.open(file_path)
+# spaCy modeli ile metni işliyoruz.
+doc = nlp(text)
 
-# Tüm sayfalardaki metni birleştir
-full_text = ""
-for page in doc:
-    full_text += page.get_text()
+# Yeni anonimleştirilmiş metin değişkeni oluşturuyoruz.
+anonymized_text = text
 
-# NLP işlemi
-spacy_doc = nlp(full_text)
-entities_to_redact = [
-    ent.text for ent in spacy_doc.ents if ent.label_ in ["PERSON", "ORG"]]
+# Algılanan isimleri ve organizasyonları [REDACTED] ile değiştiriyoruz.
+for ent in doc.ents:
+    # Sadece kişi ve organizasyon isimlerini değiştiriyoruz.
+    if ent.label_ in ['PERSON', 'ORG']:
+        anonymized_text = anonymized_text.replace(ent.text, "[REDACTED]")
 
-# Anonimleştirme
-for page in doc:
-    for ent_text in entities_to_redact:
-        matches = page.search_for(ent_text)
-        for rect in matches:
-            # Üzerine kırmızı kutu çiziyoruz ve metni karartıyoruz
-            page.draw_rect(rect, color=(1, 0, 0), fill=(
-                1, 0, 0))  # RGB(1,0,0) = kırmızı
-
-# Yeni dosyayı kaydet
+# Dosyanın bulunduğu dizini ve orijinal adını alıyoruz.
 directory, original_filename = os.path.split(file_path)
-base_filename, _ = os.path.splitext(original_filename)
-new_filename = f"anonymized-{base_filename}.pdf"
+
+# Yeni dosya adını oluşturuyoruz.
+new_filename = f"tamamlandi-{original_filename}"
+
+# Yeni dosyanın tam yolunu oluşturuyoruz.
 new_file_path = os.path.join(directory, new_filename)
 
-doc.save(new_file_path)
-doc.close()
+# Yeni anonimleştirilmiş metni yeni dosyaya kaydediyoruz.
+with open(new_file_path, "w", encoding='utf-8') as file:
+    file.write(anonymized_text)
 
-print(f"İşlem tamamlandı! Yeni PDF kaydedildi: {new_file_path}")
+# Kullanıcıya işlemin tamamlandığını bildiriyoruz.
+print(f"İşlem tamamlandı! Yeni dosya kaydedildi: {new_file_path}")
